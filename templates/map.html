@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Map</title>
+    <style>
+        #map-container {
+            display: flex;
+        }
+        #map {
+            width: 75%;
+            height: 50vh;
+        }
+        #sidebar {
+            width: 25%;
+            height: 50vh;
+            overflow-y: auto;
+            background-color: #f4f4f4;
+            padding: 10px;
+        }
+        #sidebar h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #2E3B4E;
+        }
+        #sidebar p {
+            font-size: 14px;
+            color: #2E3B4E;
+        }
+        body {
+            background-color: #2E3B4E;
+            color: #FFFFFF;
+            font-family: Consolas, monospace;
+            margin: 0;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 style="color: #ffffff;">
+        <span>Welcome to</span>
+        <span style="color: #ff0000;">Urbex Heaven</span>
+    </h1>
+
+    <div id="map-container">
+        <div id="map"></div>
+        <div id="sidebar">
+            <h3 id="location-name">Click on a marker</h3>
+            <p id="location-description">The description will appear here when you click on a marker.</p>
+        </div>
+    </div>
+
+    <script id="locations-data" type="application/json">
+        {{ locations | tojson }}
+    </script>
+
+    <script>
+        function initMap() {
+            // Parse the locations from the injected JSON data
+            const locations = JSON.parse(document.getElementById('locations-data').textContent);
+            const center = { lat: locations[0].lat, lng: locations[0].lng };
+
+            // Initialize the map
+            const map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 7,
+                center: center,
+            });
+
+            // Create markers for each location
+            locations.forEach(loc => {
+                const marker = new google.maps.Marker({
+                    position: { lat: loc.lat, lng: loc.lng },
+                    map: map,
+                    title: loc.name
+                });
+
+                // Prepare the description (use 'No description available' if empty or null)
+                const description = loc.description && loc.description.trim() !== '' ? loc.description : 'No description available';
+
+                // Add an info window to each marker
+                const infowindow = new google.maps.InfoWindow({
+                    content: `<strong>${loc.name}</strong><br>${description}`
+                });
+
+                // Show info window when marker is clicked
+                marker.addListener('click', () => {
+                    infowindow.open({
+                        anchor: marker,
+                        map,
+                        shouldFocus: false,
+                    });
+
+                    // Update the sidebar with the selected location's details
+                    document.getElementById('location-name').innerHTML = loc.name;
+                    document.getElementById('location-description').innerHTML = description;
+                });
+            });
+        }
+    </script>
+
+    <!-- Include Google Maps API (use the API key injected by Flask) -->
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&callback=initMap" async defer></script>
+
+</body>
+</html>
